@@ -1,0 +1,103 @@
+SQL Concepts:
+-------------
+
+Distinct needs to go immediately after the SELECT.
+
+There is no SQL command to define the column ordering.
+
+DATEDIFF(day, '2011/08/25', '2017/08/25') -> 2192
+
+If we want to get float or Decimal output, Either our denominator or Numerator should be float or decimal type. (MS SQL Server) -> 4/ CAST(3 as float)
+
+We cannot use a function which includes any DML operations - {Insert, Update, Delete} in select statement.
+
+
+In order to count NULL values of a column
+//
+SELECT SUM(CASE WHEN Title is null THEN 1 ELSE 0 END) 
+AS [Number Of Null Values] 
+    , COUNT(Title) AS [Number Of Non-Null Values] 
+    FROM Person.Person
+
+* SET ANSI_NULLS ON // any comparison or calculation performed with NULL values result must be NULL
+
+    - This restricts comparison of (--- = NULL)
+    - This can be disabled by setting the parameter OFF
+
+* IS NULL / IS NOT NULL
+
+* count(<column_name>)   // Count() Doesn't include NULL values
+
+* Exec sp_helptext <<spGetEmp>>; -- Helps to find the command used in db object
+
+
+
+Basics:
+
+DDL - Define,modify structure of db (create, alter, drop, truncate)
+DML - perform operations on data in db (insert, update, delete, merge)
+DCL - set of commands helps in managing security & access privileges (Grant/Revoke)
+TCL - In managing transactions in db (Commit,Rollback,Savepoint)
+DQL - SELECT 
+
+SAVEPOINT SAVEPOINT_NAME;  // Mark a transaction in a relation - a state in the set of transactions
+RELEASE SAVEPOINT SAVEPOINT_NAME;
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CASE statement - Similar to IF-ELSE statements which go through multiple conditions one after the other and fetch particular value based on certain condition
+
+select OrderID, count(Quantity) as prod_count,
+CASE WHEN count(Quantity) >= 5 THEN "Multiple Products"
+	 WHEN count(Quantity) > 2 THEN "Dual Products"
+     WHEN count(Quantity) >= 1 THEN "Single Product!"
+     ELSE "No Product!!!"
+     END
+AS Quantity_Description
+from OrderDetails group by OrderID;
+
+
+SELECT CustomerName, City, Country FROM Customers
+ORDER BY (CASE
+WHEN City IS NULL THEN Country
+ELSE City
+END);
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+UNION : combine two different SQL Queries. Duplicate records would not be returned.
+
+    * Both queries must return same same no of columns.
+    * The columns in both the queries must be in same order.
+    * Data type of all the columns in both the queries must be same.
+
+Aggregate function: can be used to perform calculation on a set of values, which will then return a single value
+    
+    * SUM, AVG, COUNT, MIN, MAX
+
+Type Conversion: CAST('31-01-2021' as DATE)   // MS SQL Server
+
+SELECT SUBSTRING(full_name, 1, CHARINDEX(' ', full_name) - 1) as first_name;   // MS SQL Server
+
+Sub Query: Select statement is used in another Select query statement. It may occur in any clause (select/from/where.)
+
+        * SELECT * FROM continents ct WHERE ct.continent_code IN (SELECT cr.continent_code FROM countries cr);
+
+    * Instead of using the same subquery multiple times, we can use "WITH" clause in sql.
+    * We can place the subquery just once inside the WITH clause and then use this multiple times in our query.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SQL Query Tuning: 
+
+    - check for joins
+    - avoid repeated sub qiueries
+    - use proper columns for index creation
+    
+    - Use updated statistics for the relations as it helps optimizer to generate best execution plan
+
+* Unique Key can allow NULL values where as Primary Key will not allow NULL values.
+
+* FOREIGN KEY constraint prevents invalid data from being inserted into the foreign key column, because it has to be one of the values contained in the parent table.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
