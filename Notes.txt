@@ -101,3 +101,128 @@ SQL Query Tuning:
 * FOREIGN KEY constraint prevents invalid data from being inserted into the foreign key column, because it has to be one of the values contained in the parent table.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Views:
+
+    - view is a virtual table (Doesn't store data) based on the result-set of an SQL statement
+    - It may contains attributes from multiple tables as a part of the result set
+    - A view always shows up-to-date data! (Accurate data from table). The database engine recreates the view, every time a user queries it.
+
+Why Views? 
+    * Security - We can just grant the access to a view to a user instaed of providing any details about the actual query.
+    * Simplify the complex queries - Instead of re-writing complex query, we can work on views created for the complex query.
+
+CREATE VIEW [Brazil Customers] AS
+SELECT CustomerName, ContactName
+FROM Customers
+WHERE Country = 'Brazil';
+
+select * from [Brazil Customers];
+
+* A view can be updated with the "CREATE OR REPLACE VIEW" statement 
+
+    * Rules to update a View:
+        - Can't change column name
+        - Can't change column type
+        - Can't change order of columns
+        - can add new columns at the end
+    
+    CREATE OR REPLACE VIEW [Brazil Customers] AS
+    SELECT CustomerName, ContactName, City
+    FROM Customers
+    WHERE Country = 'Brazil';
+    
+    * Views hold the structure but doesn't consume the memory
+
+    * To modify the structure of the view, we need to use the "ALTER VIEW" statement.
+
+    * DROP view - To drop a view
+
+    Scenario - 
+        1. Table created -> View Created -> Table structure modified (change in column name/Extra column) -> View still points to old structure of the relation
+        2. Use "CREATE OR REPLACE VIEW" statement to refresh the view so that view holds the recent structure
+        3. It doesn't happen with data updates to table as views are concerned about just the structure.
+
+*** Updatable Views *** - We can update the view which can update the data of the relation
+
+    Rules:
+    - Update can be possible only on 1 table/view
+    - Update can't be performed if view has (DISTINCT, GROUP BY, WITH clauses, Window functions)
+
+
+UPDATE expensive_products 
+SET prod_name='Apple Pro 2', brand='Apple' 
+where prod_id='P10';    // update the data in relation
+
+
+*** WITH CHECK option *** - This helps in validating the data to be inserted into the relation through a view if an insertion is being performed from the view.
+
+create view apple_products AS
+SELECT * from tb_product_info where brand='Apple'
+with check option; 
+
+insert into apple_products values('P22','Note 1', 'Samsung', 2500, null);   --- This can't be inserted as we specified 'with check' option using condition (brand='Apple')
+
+
+* A view is deleted with the DROP VIEW statement
+
+DROP VIEW [Brazil Customers];
+
+* contents or data of the "Materialized views" are periodically refreshed based on its configuration.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Synonym: Provides an alternative name for another database object, referred to as the base object, that can exist on a local or remote server.
+
+- simplifying and shortening the database objects names
+-- To reference a table from another server, we may need to use four-part named "Server1.GFG.Geeeksh.Geektab".
+-- If the location of table were to change, for example, to another server, application would have to be modified to reflect that change.
+* To address above issues, we can use synonyms in sql.
+- A synonym belongs to a schema, and like other objects in a schema, the name of a synonym must be unique.
+
+CREATE SYNONYM Geektable  
+FOR Server1.GFG.Geeeksh.Geektab;  
+GO
+
+* Only synonym owners, members of db_owner, or members of db_ddladmin can grant permission on a synonym.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Keys in DBMS:
+
+Key/SuperKey : Attribute or it's set which can uniquely identify each record of a relation
+i.e.,   {sid,sname,smarks,sdept,scourse}
+
+sid -> S.Key
+{sid, sname} -> S.Key
+
+Max possible Super Keys (5 attributes) = 5c1+5c2+5c3+5c4+5c5 = 31 (2^n-1)
+
+* Super Key is just a theoretical concept
+
+Candidate key: It is a "Super Key" whose proper subset (s2 C s1) is not a Super Key.
+
+            * Minimal Super Key
+            * If there exists a single attribute which is a super key, the proper subset of it will be null (Phi). It will be a candidate key. 
+
+* Every candidate key is a super key but not every super keys is a candidate key.
+
+* One of the candidate keys with no null values is considered as the primary key and remaining are considered as alternative keys.
+
+Attribute Closure (X+) : Set of attributes determined by X.
+
+Super Key : Set of attributes whose closure contains all the attributes of a relation.
+
+* No prime attribute exists on the right side of the F.D (X->Y), then there exists only one candidate key.
+
+
+
+How to find Candidate Keys / Super Keys / Primary Keys?
+
+- Consider the attribute closure (X+) for all attributes in the the relation.
+- Use Amstrong's axoims [Reflexive, Transitive, Augment, Union..]
+- Apply rules considering   all FD's in the relation
+- If an attribute or set of attributes derive all the attributes of the relation, it is the "Super Key". Find all the super keys involved by substituting the attribute in FD's.
+- If a proper subset of any super key is not a super key, then that super key is considered as "Candidate Key"
+- We can find all the candidate keys just by checking if any of the FD's have candidate key on RHS. (X -> Y). If Y be the candidate key, then we can substitute the X for Y and check if it satisfies the candidate key properties and confirm on it.
+- Among all the candidate keys available, we choose one key as "Primary Key".
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
