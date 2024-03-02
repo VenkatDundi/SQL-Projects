@@ -107,6 +107,8 @@ select cte_first.Year, cte_first.PC_Name, cte_first.Candidate, (C1-C2) as 'Winni
 from cte_first INNER JOIN cte_second on cte_first.YEAR=cte_second.Year and cte_first.PC_Name = cte_second.PC_Name order by cte_first.Year,cte_first.PC_Name ;
 
 
+
+
 with cte_margin as (
 	
 	select Year, PC_Name, Candidate, IIF(VotePoll!=0, VotePoll - lead(VotePoll)	over(partition by Year, PC_Name order by VotePoll desc), 0) as 'Margin',
@@ -115,5 +117,125 @@ with cte_margin as (
 select Year, PC_Name, Candidate, Margin from cte_margin where r=1 order by Year, PC_Name;
 
 
+
 -- 4. Consituencies with only 1 contestant  --- May be incorrect data as per stats
 
+with cte_single as (
+	
+	select Year, PC_Name, Candidate, VotePoll, lag(VotePoll) over(partition by Year, PC_Name order by VotePoll desc) as 'lag_vote', 
+	lead(VotePoll) over(partition by Year, PC_Name order by VotePoll desc) as 'lead_vote' from NationalElection
+
+)
+SELECT * from cte_single where lag_vote IS NULL and lead_vote IS NULL order by Year, PC_Name;
+
+select * from NationalElection where VotePoll=0;
+
+
+
+
+/* Creation of new field - Result : Candidate Won/Lost status update based on Year, Constituency*/ 
+
+alter table NationalElection add Result nvarchar(10);
+
+with cte_ranking as (
+	
+	select Year, PC_Name, Candidate, VotePoll, rank() over(partition by Year, PC_Name order by VotePoll desc) r from NationalElection
+)
+Update NationalElection set Result= 'Won' from NationalElection Inner Join cte_ranking 
+		on NationalElection.Year=cte_ranking.Year and 
+			NationalElection.PC_Name=cte_ranking.PC_Name and 
+			NationalElection.Candidate=cte_ranking.Candidate and 
+			NationalElection.VotePoll=cte_ranking.VotePoll where r=1;
+Update NationalElection set NationalElection.Result='Lost' where Result IS NULL;
+select top 50 * from NationalElection;
+
+
+
+
+-- 5. Winning Candidates in multiple terms
+
+
+select Candidate, Count(*) as 'Wins' from NationalElection 
+where Result='Won' group by Candidate order by Wins desc;
+
+
+select Candidate, Count(*) as 'Wins' from NationalElection 
+where Result='Won' group by Candidate having Count(*) > 5 order by Wins desc;
+
+
+-- 6. Candidates who did not loose atleast once among all contested places
+
+
+select * from NationalElection where Candidate not in 
+(Select Candidate from NationalElection where Result='Lost') order by Result;
+
+
+-- 7. Constituencies where candidates contested multiple times in the same term
+
+
+select Year, Candidate, PartyAbbr, Count(PC_Name) as 'Places Contested' from NationalElection 
+group by Year, Candidate, PartyAbbr having Count(PC_Name) > 1 order by  Candidate, PartyAbbr, Year;
+
+
+
+-- 8. Distribution by Party
+
+
+select Year, Party, Count(Result) as 'Candidates Won' from NationalElection
+where Result='Won'
+group by Year, Party,Result 
+order by 'Candidates Won' desc;
+
+
+-- 9. Win Percentage distribution by Party
+
+with cte_total_contest as (
+	
+	select Party, Count(Candidate) as contested from NationalElection group by Party
+), cte_total_won as (
+
+	select Party, Count(Candidate) as won from NationalElection where Result='Won' group by Party
+)
+select cte_total_contest.Party, contested, won, round(won/CAST(contested as float), 3) as 'Win Percentage' 
+from cte_total_contest LEFT JOIN cte_total_won 
+on cte_total_contest.Party=cte_total_won.Party
+order by won desc;
+
+
+-- Contested but didn't win alteast a seat
+
+with cte_total_contest as (
+	
+	select Party, Count(Candidate) as contested from NationalElection group by Party
+), cte_total_won as (
+
+	select Party, Count(Candidate) as won from NationalElection where Result='Won' group by Party
+)
+select cte_total_contest.Party, contested, won, round(won/CAST(contested as float), 3) as 'Win Percentage' 
+from cte_total_contest LEFT JOIN cte_total_won 
+on cte_total_contest.Party=cte_total_won.Party
+where won IS NULL
+order by won desc;
+
+
+-- 10. Favourite Constituencies by Party
+
+
+select Party, PC_Name, Count(PC_Name) as Wins 
+from NationalElection 
+where Result='Won' 
+group by Party, PC_Name 
+order by Wins desc;
+
+
+
+-- Seats won by Party distributed by Year, State
+
+with cte_state_count as (
+	
+	select Year, State, Party, Count(Result) as 'Wins' from NationalElection where Result='Won' group by Year, State, Party, Result
+), cte_state_won as (
+	
+	select Year, State, Party, Wins, rank() over(partition by Year, State order by Wins desc) r from cte_state_count
+)
+select Year, State, Party, Wins from cte_state_won where r=1;
