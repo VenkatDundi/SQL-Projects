@@ -35,12 +35,10 @@ select top 10 * from NationalElection where Gender='NA';
 
 alter table NationalElection add TotalVotesPolled real;
 
-
 with cte_totalvotes as(
 
 	select Year, PC_Name, State, sum(VotePoll) over(partition by Year, PC_Name order by State) as 'Total' from NationalElection
 )
-
 Update NationalElection set NationalElection.TotalVotesPolled=cte_totalvotes.Total 
 from NationalElection INNER JOIN cte_totalvotes 
 on NationalElection.Year=cte_totalvotes.Year 
@@ -127,7 +125,6 @@ with cte_single as (
 
 )
 SELECT * from cte_single where lag_vote IS NULL and lead_vote IS NULL order by Year, PC_Name;
-
 select * from NationalElection where VotePoll=0;
 
 
@@ -154,10 +151,8 @@ select top 50 * from NationalElection;
 
 -- 5. Winning Candidates in multiple terms
 
-
 select Candidate, Count(*) as 'Wins' from NationalElection 
 where Result='Won' group by Candidate order by Wins desc;
-
 
 select Candidate, Count(*) as 'Wins' from NationalElection 
 where Result='Won' group by Candidate having Count(*) > 5 order by Wins desc;
