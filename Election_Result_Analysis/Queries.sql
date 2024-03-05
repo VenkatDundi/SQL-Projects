@@ -19,7 +19,7 @@ CASE WHEN PC_Type IS NULL and Candidate<>'None Of The Above' and Party<>'NOTA' T
 -- Validate the update on table by checking few rows
 select top 10 * from NationalElection where PC_Type='Unknown';
 
-
+select * from NationalElection where Party='NOTA';
 
 
 -- Update the Gender of Candidate when votes polled for the Constituency are for NOTA - NOT TO ANYONE
@@ -29,7 +29,7 @@ update NationalElection set Gender='NA' where Candidate='None Of The Above' and 
 -- Validate the update on table by checking few rows
 select top 10 * from NationalElection where Gender='NA';
 
-
+select Year, count(PC_Name) from NationalElection where Gender='NA' group by Year;
 
 /* Creation of New Field - Total Votes Polled */
 
@@ -86,7 +86,7 @@ with cte_won as (
 	
 	select Year, PC_Name, Candidate, VotePoll, rank() over(partition by Year, PC_Name order by VotePoll desc) as 'rank' from NationalElection
 )
-select Year, PC_Name, Candidate, VotePoll from cte_won where rank=1 order by Year, PC_Name;
+select Year, PC_Name, Candidate, VotePoll from cte_won where rank=1 order by VotePoll desc;
 
 
 -- 3. Winning margin for Candidates won in each constituency
@@ -107,12 +107,12 @@ from cte_first INNER JOIN cte_second on cte_first.YEAR=cte_second.Year and cte_f
 
 
 
-with cte_margin as (
+with cte_margin as (																	-- This is the efficient way to extract Win Margin
 	
 	select Year, PC_Name, Candidate, IIF(VotePoll!=0, VotePoll - lead(VotePoll)	over(partition by Year, PC_Name order by VotePoll desc), 0) as 'Margin',
 	rank() over (partition by Year, PC_Name order by VotePoll desc) as 'r' from NationalElection
 )
-select Year, PC_Name, Candidate, Margin from cte_margin where r=1 order by Year, PC_Name;
+select Year, PC_Name, Candidate, Margin from cte_margin where r=1 order by Margin desc;
 
 
 
@@ -157,29 +157,36 @@ where Result='Won' group by Candidate order by Wins desc;
 select Candidate, Count(*) as 'Wins' from NationalElection 
 where Result='Won' group by Candidate having Count(*) > 5 order by Wins desc;
 
-
 -- 6. Candidates who did not loose atleast once among all contested places
 
 
 select * from NationalElection where Candidate not in 
 (Select Candidate from NationalElection where Result='Lost') order by Result;
 
+select Candidate, Count(*) as Wins from NationalElection where Candidate not in 
+(Select Candidate from NationalElection where Result='Lost') group by Candidate order by Wins desc;
 
 -- 7. Constituencies where candidates contested multiple times in the same term
-
 
 select Year, Candidate, PartyAbbr, Count(PC_Name) as 'Places Contested' from NationalElection 
 group by Year, Candidate, PartyAbbr having Count(PC_Name) > 1 order by  Candidate, PartyAbbr, Year;
 
+select Year, Candidate, PartyAbbr, Count(PC_Name) as 'Places Contested' from NationalElection 
+group by Year, Candidate, PartyAbbr having Count(PC_Name) > 1 order by [Places Contested] desc;
 
 
 -- 8. Distribution by Party
-
 
 select Year, Party, Count(Result) as 'Candidates Won' from NationalElection
 where Result='Won'
 group by Year, Party,Result 
 order by 'Candidates Won' desc;
+
+
+select Party, Count(Result) as 'Candidates Won' from NationalElection
+where Result='Won'
+group by Party
+order by 'Candidates Won' desc
 
 
 -- 9. Win Percentage distribution by Party
@@ -195,6 +202,20 @@ select cte_total_contest.Party, contested, won, round(won/CAST(contested as floa
 from cte_total_contest LEFT JOIN cte_total_won 
 on cte_total_contest.Party=cte_total_won.Party
 order by won desc;
+
+/* Order by Win Percentage*/
+
+with cte_total_contest as (
+	
+	select Party, Count(Candidate) as contested from NationalElection group by Party
+), cte_total_won as (
+
+	select Party, Count(Candidate) as won from NationalElection where Result='Won' group by Party
+)
+select cte_total_contest.Party, contested, won, round(won/CAST(contested as float), 3) as 'Win Percentage' 
+from cte_total_contest LEFT JOIN cte_total_won 
+on cte_total_contest.Party=cte_total_won.Party
+order by [Win Percentage] desc;
 
 
 -- Contested but didn't win alteast a seat
@@ -215,13 +236,11 @@ order by won desc;
 
 -- 10. Favourite Constituencies by Party
 
-
-select Party, PC_Name, Count(PC_Name) as Wins 
+select Party, PC_Name, Count(PC_Name) as Wins
 from NationalElection 
 where Result='Won' 
-group by Party, PC_Name 
+group by Party, PC_Name
 order by Wins desc;
-
 
 
 -- Seats won by Party distributed by Year, State

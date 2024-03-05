@@ -60,6 +60,21 @@ Please find some questions to extract details from data:
 18. what are the Political Parties with majority of winning seats in elections distributed by Year, State, Constituency? -   Rank() the Win count for each party
 
 
+Interesting Insights:
+
+<code style="color : gold">
+
+1. There were 543 constituencies where people voted for NOTA - None Of The Above in 2014 Elections, the term during which it was introduced.
+2. There were more number of Male caniddates who contested and won the elections in multiple terms.
+3. Maximum VotePoll (863358) for a Candidate is for "Jaipur" constituency in 2014.
+4. Highest Margin recorded (592502) by a candidate in Lok Sabha Elections till 2014 was - "Anil Basu" from Arambagh constituency in 2004.
+5. There were 5 constituencies where only 1 candidate was contested, VotePoll (0) in the dataset. It may also be some inconsistent data.
+6. There were 3 Candidates who won in maximum terms of Lok Sabha Elections - Won in 8 Elections. Moreover, 29 candidates won in more than 5 elections.
+7. Only one Candidate - "Mulayam Singh Yadav" won in 8 term elections without atleast one loss between 1977 and 2014.
+8. Indian National Congress won more number of seats than any other party in all the constituencies contested between 1977and 2014.
+9. There were 22 Parties which has maximum winning percentage (Number of contested = Number of wins) over the given time period.
+10. There are 4 constituencies (Alipurduars, Balurghat, Bolpur, Jhargram) where a political party won all the 9 term elections. 
+</code>
 
 Steps:
 
@@ -315,3 +330,4 @@ with cte_state_count as (
 )
 select Year, State, Party, Wins from cte_state_won where r=1;
 ```
+
