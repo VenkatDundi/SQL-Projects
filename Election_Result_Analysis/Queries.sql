@@ -253,3 +253,37 @@ with cte_state_count as (
 	select Year, State, Party, Wins, rank() over(partition by Year, State order by Wins desc) r from cte_state_count
 )
 select Year, State, Party, Wins from cte_state_won where r=1;
+
+
+
+/* Trigger to display a Warning! message upon attempt to insertor update data in the table */
+
+create trigger data_modify_warning
+on NationalElection
+INSTEAD OF INSERT,UPDATE, DELETE
+as
+BEGIN
+		print 'Insertion/Updation/Deletion is not allowed on this Table! Please contact the DBA!!'
+END;
+
+SET NOCOUNT ON
+insert into NationalElection values('sample', 2019, 35, 'parallel universe',  'none', 'vijaya rama raju', 'm', 'yyy', 'yyy', 152643, 192563, '', '', '', '');
+
+delete from NationalElection where Year=2019;
+
+
+/* Trigger to restrict DDL operations on database */
+
+create trigger restrict_ddl_operations
+on database
+FOR CREATE_TABLE, DROP_TABLE, ALTER_TABLE
+AS
+BEGIN
+		ROLLBACK;
+		Print 'Create, Alter cannot be used on this table!! Please contact the DBA!';
+END;
+
+create table sample_ddl_check_new(
+		ID int,
+		Message text
+)

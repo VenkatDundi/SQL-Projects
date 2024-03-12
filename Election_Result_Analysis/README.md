@@ -76,6 +76,7 @@ Interesting Insights:
 10. There are 4 constituencies (Alipurduars, Balurghat, Bolpur, Jhargram) where a political party won all the 9 term elections. 
 </code>
 
+
 Steps:
 
 ### Create DB:
@@ -331,3 +332,57 @@ with cte_state_count as (
 select Year, State, Party, Wins from cte_state_won where r=1;
 ```
 
+###Triggers:
+
+Usage of Triggers has been specified which shows that an action can be performed with respect to occurrence of particular operation (Insert, Update, Delete in DML operations) & (Create, Drop, Alter in DDL operations) performed on a relation in database.
+
+Consider below examples:
+
+```
+/* Trigger to display a Warning! message upon attempt to insertor update data in the table */
+
+create trigger data_modify_warning
+on NationalElection
+INSTEAD OF INSERT,UPDATE,DELETE
+as
+BEGIN
+		print 'Insertion/Updation/Deletion is not allowed on this Table! Please contact the DBA!!'
+END;
+```
+> This is the INSTEAD OF trigger which restricts the users to perform DML Operations - Insertion/Updation/Deletion on the relation in database but prints the message that these operations can't be performed on this relation. It helps in achieving secure access to the components in the database and restricts the users in performing undesirable modifications to data in tables.
+
+Please consider below example queries to validate the working of the trigger.
+
+
+```
+SET NOCOUNT ON
+insert into NationalElection values('sample', 2019, 35, 'parallel universe',  'none', 'vijaya rama raju', 'm', 'yyy', 'yyy', 152643, 192563, '', '', '', '');
+
+delete from NationalElection where Year=2019;
+```
+
+Consider another example to restrict the operations with respect to schema of the table in database - DDL Operations. 
+
+```
+/* Trigger to restrict DDL operations on database */
+
+create trigger restrict_ddl_operations
+on database
+FOR CREATE_TABLE, DROP_TABLE, ALTER_TABLE
+AS
+BEGIN
+		ROLLBACK;
+		Print 'Create, Alter cannot be used on this table!! Please contact the DBA!';
+END;
+```
+
+> This trigger is created on the database which fires upon creation/Drop/Alter operations on the database. This can be improved by writing conditionals and further exception handling logic to show operation specific warning message to the user.
+
+Below query helps in validating the working of this trigger.
+
+```
+create table sample_ddl_check_new(
+		ID int,
+		Message text
+)
+```
