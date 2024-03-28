@@ -6,9 +6,11 @@ This project focuses on analyzing National Election Result data using a SQL Serv
 This analysis aims to provide valuable statistics and trends from election results, aiding the public in understanding correlations between political power and community growth and development. By examining the performance of political parties and candidates over time and across different regions, this analysis simplifies the electoral outcomes.
 
 
-### Source Data:
+### Data Source:
 
 The Source data contains National Election Result records - (Lok Sabha) India from 1977 to 2014 across all the constituencies and states in the Country. This is a comma separated values file with around 76000 records, which has been made available as a part of this repository.
+
+Reference: https://www.kaggle.com/datasets/awadhi123/indian-election-dataset?select=indian-national-level-election.csv
 
 
 ### Data Cleaning and Initial Formatting:
@@ -211,7 +213,9 @@ select Year, PC_Name, Candidate, Margin from cte_margin where r=1 order by Year,
 
 6. Candidates with only 1 contestant
 
-Details of constituency which doesn't have any other candidate as per records - Only 1 contenstant to be assumed
+Details of constituency which doesn't have any other candidate as per records - Only 1 contenstant to be assumed. 
+
+I have come across this as a part of using lead() window function which revealed that there exists some constituencies where there are are no candidates in second position as per the considered data set. (In fact, this may not be true as per the actual statistics). There are 5 of such instances which can be retrieved using the below query.
 
 ```
 with cte_single as (
@@ -332,7 +336,7 @@ with cte_state_count as (
 select Year, State, Party, Wins from cte_state_won where r=1;
 ```
 
-###Triggers:
+### Triggers:
 
 Usage of Triggers has been specified which shows that an action can be performed with respect to occurrence of particular operation (Insert, Update, Delete in DML operations) & (Create, Drop, Alter in DDL operations) performed on a relation in database.
 
@@ -385,4 +389,35 @@ create table sample_ddl_check_new(
 		ID int,
 		Message text
 )
+
+```
+
+### Stored Procedures:
+
+
+Usage of Stored procedures has been specified in this project to specify the reusability and security aspects of using queries while retrieving a result set from the database. Upon creating stored procedures, users can easily execute the same by changing parameters as required. A file with few examples has been included in this repository for reference.
+
+Consider an example to retrieve the details of candidates who contested in Elections during a specific year in a particular state.
+
+```
+/* SP to get contestant details in a Constituency */
+
+create procedure get_CandidateDetails(
+	@state nvarchar(50),
+	@year int,
+	@pc_name nvarchar(50)
+)
+as
+Select * from NationalElection where Year=@year and State=@state and PC_Name=@pc_name order by Year,State,PC_Name;
+
+```
+
+> This SP has 3 input parameters (IN by Default) such as Year, State, Constituency which will be passed to the select query to retrieve all the fields from the table.
+
+Usage of SP - Once the stored procedure has been created, below query can be used to retrieve the data from table by speifying the parameter values as shown below
+
+```
+
+Exec get_CandidateDetails @year='2014',@state='Andhra Pradesh',@pc_name='Bapatla'
+
 ```
